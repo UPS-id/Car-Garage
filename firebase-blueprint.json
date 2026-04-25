@@ -1,0 +1,81 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Public profile information for a JDM DNA user.",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string" },
+        "avatar": { "type": "string" },
+        "bio": { "type": "string" },
+        "location": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["username"]
+    },
+    "Build": {
+      "title": "Car Build",
+      "description": "A car in a user's garage or a showcase build.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "make": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "number" },
+        "specs": { "type": "string" },
+        "hp": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "isDreamCar": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "make", "model"]
+    },
+    "Listing": {
+      "title": "Classified Listing",
+      "description": "A part or car for sale in the marketplace.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "price": { "type": "number" },
+        "location": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string", "enum": ["Wheels", "Engine", "Interior", "Exterior", "Car"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "price"]
+    },
+    "ForumThread": {
+      "title": "Forum Thread",
+      "description": "A discussion thread in the community forum.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "replyCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "content"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents."
+    },
+    "builds/{buildId}": {
+      "schema": "Build",
+      "description": "Car builds collection."
+    },
+    "listings/{listingId}": {
+      "schema": "Listing",
+      "description": "Marketplace listings."
+    },
+    "threads/{threadId}": {
+      "schema": "ForumThread",
+      "description": "Forum discussion threads."
+    }
+  }
+}

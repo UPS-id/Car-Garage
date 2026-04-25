@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isVerified() { return request.auth.token.email_verified == true; }
+
+    // Entity Validations
+    function isValidUser(data) {
+      return data.keys().hasAll(['username']) &&
+             data.username is string && data.username.size() <= 32 &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+             (!('avatar' in data) || (data.avatar is string && data.avatar.size() <= 1000));
+    }
+
+    function isValidBuild(data) {
+      return data.keys().hasAll(['userId', 'make', 'model', 'year']) &&
+             data.userId == request.auth.uid &&
+             data.make is string && data.make.size() <= 64 &&
+             data.model is string && data.model.size() <= 64 &&
+             data.year is number && data.year >= 1900 && data.year <= 2100 &&
+             (!('hp' in data) || (data.hp is number && data.hp >= 0 && data.hp <= 5000));
+    }
+
+    function isValidListing(data) {
+      return data.keys().hasAll(['userId', 'title', 'price']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 100 &&
+             data.price is number && data.price >= 0;
+    }
+
+    function isValidThread(data) {
+      return data.keys().hasAll(['userId', 'title', 'content']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 200 &&
+             data.content is string && data.content.size() <= 10000;
+    }
+
+    // Collection Rules
+    match /users/{userId} {
+      allow get, list: if true;
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['username', 'avatar', 'bio', 'location']);
+    }
+
+    match /builds/{buildId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidId(buildId) && isValidBuild(incoming());
+      allow update: if isOwner(existing().userId) && isValidBuild(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['make', 'model', 'year', 'specs', 'hp', 'imageUrl', 'isDreamCar']);
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /listings/{listingId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidId(listingId) && isValidListing(incoming());
+      allow update: if isOwner(existing().userId) && isValidListing(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['title', 'price', 'location', 'imageUrl', 'category', 'description']);
+      allow delete: if isOwner(existing().userId);
+    }
+
+    match /threads/{threadId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidId(threadId) && isValidThread(incoming());
+      allow update: if isOwner(existing().userId) && isValidThread(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'category', 'replyCount']);
+      allow delete: if isOwner(existing().userId);
+    }
+  }
+}
